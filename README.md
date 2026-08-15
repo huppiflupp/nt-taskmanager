@@ -68,6 +68,7 @@ so lässt sich nachrechnen, ob die Zahlen im Fenster stimmen.
 | **Processes** | Name, Benutzer, CPU-Last, Speicher, PID. Sortierbar, Prozess beenden. |
 | **Services** | Die systemd-Units vom Typ `.service` mit Beschreibung und Status. |
 | **Performance** | Prozessor, Grafikkarte und Arbeitsspeicher als Balken mit Verlauf. |
+| **Networking** | Ethernet, WLAN und Bluetooth: je ein Verlauf, darunter die Tabelle. |
 
 ![Performance](doc/performance.png)
 
@@ -120,6 +121,42 @@ grün. Wer sie einfärbt, verliert genau das Bild, das jeder kennt.
 Der Rahmen um beide kommt dagegen sehr wohl vom Stil
 (`QStyle::PE_Frame`), damit die Vertiefung dieselbe ist wie an jeder
 Tabelle im Fenster.
+
+## Das Netzwerk
+
+Drei Arten von Adapter, drei Quellen:
+
+| | Zähler | Zustand, Geschwindigkeit |
+|---|---|---|
+| Ethernet, WLAN | `/proc/net/dev` | `/sys/class/net/…` |
+| Bluetooth | `ioctl HCIGETDEVINFO` | dasselbe `ioctl` |
+
+Bluetooth taucht in `/proc/net/dev` nicht auf — dort stünde allenfalls
+`bnep0`, und auch das nur, solange gerade eine PAN-Verbindung besteht.
+Die Zähler des Adapters holt deshalb dasselbe `ioctl`, das auch
+`hciconfig` benutzt; es braucht keine erhöhten Rechte. Die Struktur ist
+selbst deklariert (der Header gehört zu `bluez-libs-devel`) und gegen
+`hciconfig` geprüft: RX 2 988 490 und TX 30 409, auf das Byte gleich.
+
+Die Auslastung in Prozent gibt es nur, wo eine Linkgeschwindigkeit
+gemeldet wird — bei Ethernet also, bei WLAN und Bluetooth nicht. Dort
+skaliert der Verlauf auf die höchste bisher gesehene Rate und schreibt
+das in den Titel; ohne diesen Hinweis sähe eine Spitze bei 100 % nach
+einer ausgelasteten Leitung aus, und sie heißt nur „so viel wie noch
+nie".
+
+## Always On Top unter Wayland
+
+`Qt::WindowStaysOnTopHint` bleibt unter Wayland wirkungslos: Das
+Protokoll kennt kein „immer oben", ein Fenster kann seine Lage im Stapel
+dort grundsätzlich nicht selbst bestimmen.
+
+Der Fenstermanager kann es sehr wohl. KWin nimmt dafür Anweisungen über
+D-Bus entgegen, also lädt das Programm ein winziges Skript, das sein
+eigenes Fenster an der Prozesskennung erkennt und `keepAbove` setzt.
+Unter X11 genügt weiterhin die Fensterfahne.
+
+Als Startoption gibt es dasselbe: `--obenauf`.
 
 ## Was nicht drin ist
 

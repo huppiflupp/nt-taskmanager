@@ -2,11 +2,16 @@
 
 #include "dienstemodell.h"
 #include "leistungsseite.h"
+#include "netzseite.h"
 #include "prozessmodell.h"
 
+#include <QAction>
 #include <QActionGroup>
 #include <QApplication>
 #include <QCheckBox>
+#include <QDBusInterface>
+#include <QDBusReply>
+#include <QDir>
 #include <QInputDialog>
 #include <QHBoxLayout>
 #include <QHeaderView>
@@ -18,7 +23,9 @@
 #include <QPushButton>
 #include <QSortFilterProxyModel>
 #include <QStatusBar>
+#include <QGuiApplication>
 #include <QTabWidget>
+#include <QTemporaryFile>
 #include <QTextStream>
 #include <QTableView>
 #include <QTimer>
@@ -44,6 +51,8 @@ Hauptfenster::Hauptfenster(QWidget *eltern)
     m_reiter->addTab(baueDiensteseite(), QStringLiteral("Services"));
     m_leistung = new Leistungsseite(this);
     m_reiter->addTab(m_leistung, QStringLiteral("Performance"));
+    m_netz = new Netzseite(this);
+    m_reiter->addTab(m_netz, QStringLiteral("Networking"));
     setCentralWidget(m_reiter);
 
     m_standProzesse = new QLabel(this);
@@ -67,6 +76,30 @@ Hauptfenster::Hauptfenster(QWidget *eltern)
     m_dienste->aktualisiere();
 
     resize(424, 468);
+}
+
+Hauptfenster::~Hauptfenster()
+{
+    // Das Skript fuer "Always On Top" wieder aus KWin entfernen. Es
+    // taete dort zwar nichts mehr, stuende aber bis zum Abmelden in der
+    // Liste der geladenen Skripte - und wer die durchsieht, soll dort
+    // keine Leichen finden.
+    if (m_obenauf && m_obenauf->isChecked()) {
+        QDBusInterface(QStringLiteral("org.kde.KWin"),
+                       QStringLiteral("/Scripting"),
+                       QStringLiteral("org.kde.kwin.Scripting"))
+            .call(QStringLiteral("unloadScript"),
+                  QStringLiteral("nt-taskmanager-keepabove"));
+    }
+}
+
+void Hauptfenster::schalteObenauf(bool an)
+{
+    if (m_obenauf) {
+        // Ueber den Menuepunkt und nicht direkt ueber setzeObenauf:
+        // sonst stuende das Fenster oben und der Haken daneben nicht.
+        m_obenauf->setChecked(an);
+    }
 }
 
 void Hauptfenster::zeigeReiter(int nummer)
@@ -104,15 +137,9 @@ void Hauptfenster::baueMenue()
                      &QWidget::close);
 
     auto *einstellungen = menuBar()->addMenu(QStringLiteral("&Options"));
-    auto *obenauf = einstellungen->addAction(QStringLiteral("&Always On Top"));
-    obenauf->setCheckable(true);
-    connect(obenauf, &QAction::toggled, this, [this](bool an) {
-        // Fensterfahnen zu aendern heisst unter Wayland, das Fenster neu
-        // aufzubauen - deshalb das show() danach. Ohne es verschwindet
-        // das Fenster beim Umschalten.
-        setWindowFlag(Qt::WindowStaysOnTopHint, an);
-        show();
-    });
+    m_obenauf = einstellungen->addAction(QStringLiteral("&Always On Top"));
+    m_obenauf->setCheckable(true);
+    connect(m_obenauf, &QAction::toggled, this, &Hauptfenster::setzeObenauf);
 
     auto *ansicht = menuBar()->addMenu(QStringLiteral("&View"));
     ansicht->addAction(QStringLiteral("&Refresh Now"), QKeySequence(Qt::Key_F5),
@@ -140,6 +167,70 @@ void Hauptfenster::baueMenue()
     auto *hilfe = menuBar()->addMenu(QStringLiteral("&Help"));
     hilfe->addAction(QStringLiteral("&About Task Manager"), this,
                      &Hauptfenster::ueberDasProgramm);
+}
+
+void Hauptfenster::setzeObenauf(bool an)
+{
+    // Unter X11 gibt es dafuer eine Fensterfahne, und sie wirkt.
+    if (QGuiApplication::platformName().startsWith(QLatin1String("xcb"))) {
+        setWindowFlag(Qt::WindowStaysOnTopHint, an);
+        show();
+        return;
+    }
+
+    // Unter Wayland nicht. Das Protokoll kennt kein "immer oben" - ein
+    // Fenster kann seine Lage im Stapel dort grundsaetzlich nicht selbst
+    // bestimmen, und Qt::WindowStaysOnTopHint bleibt wirkungslos. Der
+    // erste Anlauf setzte trotzdem nur die Fahne; das war der Grund,
+    // warum der Menuepunkt nichts tat.
+    //
+    // Der Fenstermanager kann es sehr wohl, und KWin nimmt dafuer
+    // Anweisungen ueber D-Bus entgegen: ein kleines Skript, das das
+    // eigene Fenster an der Prozesskennung erkennt und keepAbove setzt.
+    // Denselben Weg gehen andere Werkzeuge unter Plasma auch.
+    QDBusInterface kwin(QStringLiteral("org.kde.KWin"),
+                        QStringLiteral("/Scripting"),
+                        QStringLiteral("org.kde.kwin.Scripting"));
+    if (!kwin.isValid()) {
+        QMessageBox::information(
+            this, QStringLiteral("Task Manager"),
+            QStringLiteral("\"Always On Top\" needs a window manager that "
+                           "can be asked. On Wayland a window cannot raise "
+                           "itself, and KWin was not reachable."));
+        return;
+    }
+
+    QTemporaryFile skript(QDir::tempPath()
+                          + QStringLiteral("/nt-taskmanager-XXXXXX.js"));
+    skript.setAutoRemove(false);
+    if (!skript.open()) {
+        return;
+    }
+    const QString pfad = skript.fileName();
+    skript.write(QStringLiteral("var fenster = workspace.windowList();\n"
+                                "for (var i = 0; i < fenster.length; i++) {\n"
+                                "    if (fenster[i].pid == %1) {\n"
+                                "        fenster[i].keepAbove = %2;\n"
+                                "    }\n"
+                                "}\n")
+                     .arg(QCoreApplication::applicationPid())
+                     .arg(an ? QStringLiteral("true") : QStringLiteral("false"))
+                     .toUtf8());
+    skript.close();
+
+    const QString name = QStringLiteral("nt-taskmanager-keepabove");
+    // Erst das Skript des vorigen Umschaltens loswerden, sonst sammeln
+    // sich in KWin bei jedem Klick eines mehr an.
+    kwin.call(QStringLiteral("unloadScript"), name);
+    const QDBusReply<int> kennung =
+        kwin.call(QStringLiteral("loadScript"), pfad, name);
+    if (kennung.isValid()) {
+        QDBusInterface(QStringLiteral("org.kde.KWin"),
+                       QStringLiteral("/Scripting/Script%1").arg(kennung.value()),
+                       QStringLiteral("org.kde.kwin.Script"))
+            .call(QStringLiteral("run"));
+    }
+    QFile::remove(pfad);
 }
 
 void Hauptfenster::neueAufgabe()
@@ -325,6 +416,10 @@ void Hauptfenster::aktualisiere()
     // Dieselben Zahlen weiterreichen, statt sie dort noch einmal zu
     // messen - sonst stuenden im selben Fenster zwei Werte fuer
     // dieselbe Groesse, die sich um ein Prozent unterscheiden.
+    if (m_netz) {
+        m_netz->aktualisiere();
+    }
+
     if (m_leistung) {
         m_leistung->setzeWerte(m_prozesse->gesamtlast(),
                                m_prozesse->speicherlast(),

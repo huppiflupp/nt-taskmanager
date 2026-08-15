@@ -9,6 +9,7 @@
 
 #include <QMainWindow>
 
+class QAction;
 class QCheckBox;
 class QLabel;
 class QSortFilterProxyModel;
@@ -18,6 +19,7 @@ class QTimer;
 
 class Dienstemodell;
 class Leistungsseite;
+class Netzseite;
 class Prozessmodell;
 
 class Hauptfenster : public QMainWindow {
@@ -25,11 +27,16 @@ class Hauptfenster : public QMainWindow {
 
 public:
     explicit Hauptfenster(QWidget *eltern = nullptr);
+    ~Hauptfenster() override;
 
     // Schreibt die Kennzahlen auf die Standardausgabe. Fuer --bild, wo
     // niemand hinsieht, aber jemand nachrechnen koennen soll.
     void melde() const;
     void zeigeReiter(int nummer);
+
+    // Fuer die Startoption --obenauf. Setzt den Menuepunkt mit, damit
+    // Haekchen und Wirklichkeit nicht auseinanderlaufen.
+    void schalteObenauf(bool an);
 
 private Q_SLOTS:
     void aktualisiere();
@@ -37,6 +44,7 @@ private Q_SLOTS:
     void neueAufgabe();
     void setzeTakt(int millisekunden);
     void ueberDasProgramm();
+    void setzeObenauf(bool an);
 
 private:
     void baueMenue();
@@ -58,7 +66,9 @@ private:
     QLabel *m_standCpu = nullptr;
     QLabel *m_standSpeicher = nullptr;
 
+    QAction *m_obenauf = nullptr;
     Leistungsseite *m_leistung = nullptr;
+    Netzseite *m_netz = nullptr;
     QTabWidget *m_reiter = nullptr;
     QTimer *m_takt = nullptr;
     int m_gemerktePid = -1;

@@ -34,8 +34,14 @@ int main(int argc, char *argv[])
                                              "sehen ist (0 = Processes)"),
                               QStringLiteral("nummer"),
                               QStringLiteral("0"));
+    // Nuetzlich fuer den Autostart, und der einzige Weg, den
+    // KWin-Umweg fuer "Always On Top" ohne Mausklick auszuloesen.
+    QCommandLineOption obenauf(QStringLiteral("obenauf"),
+                               QStringLiteral("Fenster immer im Vordergrund "
+                                              "halten"));
     zerleger.addOption(bild);
     zerleger.addOption(reiter);
+    zerleger.addOption(obenauf);
     zerleger.addHelpOption();
     zerleger.addVersionOption();
     zerleger.process(programm);
@@ -43,6 +49,13 @@ int main(int argc, char *argv[])
     Hauptfenster fenster;
     fenster.zeigeReiter(zerleger.value(reiter).toInt());
     fenster.show();
+
+    if (zerleger.isSet(obenauf)) {
+        // Erst nachdem das Fenster steht: KWin findet es sonst noch
+        // nicht in seiner Liste.
+        QTimer::singleShot(300, &fenster,
+                           [&fenster] { fenster.schalteObenauf(true); });
+    }
 
     if (zerleger.isSet(bild)) {
         const QString ziel = zerleger.value(bild);

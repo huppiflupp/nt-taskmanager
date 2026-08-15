@@ -33,6 +33,10 @@ qt_add_executable(nt-taskmanager
     src/gpuquelle.h
     src/leistungsseite.cpp
     src/leistungsseite.h
+    src/netzquelle.cpp
+    src/netzquelle.h
+    src/netzseite.cpp
+    src/netzseite.h
 )
 
 target_link_libraries(nt-taskmanager PRIVATE Qt6::Widgets Qt6::DBus ${CMAKE_DL_LIBS})
