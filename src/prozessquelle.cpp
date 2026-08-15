@@ -93,12 +93,57 @@ QVector<Prozess> Prozessquelle::lies()
         Prozess p;
         p.pid = pid;
 
-        QFile comm(basis + QStringLiteral("/comm"));
-        if (comm.open(QIODevice::ReadOnly)) {
-            p.name = QString::fromLocal8Bit(comm.readAll()).trimmed();
+        // Der Name kommt aus dem Programmpfad, nicht aus comm.
+        //
+        // comm ist auf 15 Zeichen begrenzt - eine Grenze aus dem Kern,
+        // die es seit jeher gibt. Aus plasma-systemmonitor wird dort
+        // "plasma-systemmo", und die Namensspalte ist die wichtigste
+        // Spalte dieses Programms. Der Symlink exe zeigt auf die
+        // wirkliche Datei, ohne Laengengrenze.
+        //
+        // Kein Zwischenspeicher dafuer: readlink ist ein Systemaufruf
+        // ohne Zugriff auf den Datentraeger, 500 Stueck je Sekunde
+        // fallen nicht auf. Ein Zwischenspeicher haette dagegen ein
+        // echtes Problem - PIDs werden wiederverwendet, und ein neuer
+        // Prozess bekaeme den Namen seines Vorgaengers.
+        const QString programm = QFileInfo(basis + QStringLiteral("/exe"))
+                                     .symLinkTarget();
+        if (!programm.isEmpty()) {
+            p.name = QFileInfo(programm).fileName();
         }
         if (p.name.isEmpty()) {
-            continue;
+            // Kein exe zu sehen. Das hat zwei ganz verschiedene Gruende,
+            // und sie auseinanderzuhalten ist noetig: Kernprozesse haben
+            // wirklich keines, fremde Prozesse geben es nur nicht preis.
+            // cmdline unterscheidet beide - die haben nur Kernprozesse
+            // nicht. (Erster Versuch nahm dafuer, ob exe existiert.
+            // Das lieferte "[ModemManager]", weil exists() dem Symlink
+            // folgt und ohne Leserecht ebenfalls nein sagt.)
+            QFile cmdline(basis + QStringLiteral("/cmdline"));
+            QByteArray befehl;
+            if (cmdline.open(QIODevice::ReadOnly)) {
+                befehl = cmdline.readAll();
+            }
+            if (!befehl.isEmpty()) {
+                const QString erstes =
+                    QString::fromLocal8Bit(befehl.split('\0').constFirst());
+                p.name = QFileInfo(erstes).fileName();
+            }
+            if (p.name.isEmpty()) {
+                QFile comm(basis + QStringLiteral("/comm"));
+                if (comm.open(QIODevice::ReadOnly)) {
+                    p.name = QString::fromLocal8Bit(comm.readAll()).trimmed();
+                }
+                if (p.name.isEmpty()) {
+                    continue;
+                }
+                // Eckige Klammern fuer Kernprozesse, wie ps sie schreibt.
+                // Nicht fuer die, die schon eigene Klammern tragen -
+                // "(sd-pam)" soll nicht "[(sd-pam)]" heissen.
+                if (befehl.isEmpty() && !p.name.startsWith(QLatin1Char('('))) {
+                    p.name = QLatin1Char('[') + p.name + QLatin1Char(']');
+                }
+            }
         }
 
         QFile statm(basis + QStringLiteral("/statm"));
@@ -168,8 +213,17 @@ double Prozessquelle::speicherlast() const
     }
     qint64 gesamt = 0;
     qint64 verfuegbar = 0;
-    while (!datei.atEnd()) {
-        const QByteArray zeile = datei.readLine();
+    // readAll und dann teilen, NICHT while (!atEnd()) readLine().
+    //
+    // Dateien unter /proc melden die Groesse 0 - sie entstehen erst beim
+    // Lesen. QFile::atEnd() beantwortet die Frage aber anhand genau
+    // dieser Groesse und sagt schon vor dem ersten Lesen "ja". Die
+    // Schleife lief deshalb null Mal durch, die Speicheranzeige stand
+    // auf 0 Prozent, und es sah aus wie ein Rechenfehler. readAll()
+    // liest blockweise weiter, bis nichts mehr kommt, und liefert die
+    // vollen 1671 Bytes.
+    const QList<QByteArray> zeilen = datei.readAll().split('\n');
+    for (const QByteArray &zeile : zeilen) {
         // MemAvailable, nicht MemFree: was der Zwischenspeicher haelt,
         // ist nicht belegt, sondern jederzeit abrufbar. MemFree zeigte
         // auf einem gesunden System 95 Prozent Belegung an.

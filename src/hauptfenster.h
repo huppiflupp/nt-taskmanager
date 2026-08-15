@@ -13,6 +13,7 @@ class QCheckBox;
 class QLabel;
 class QSortFilterProxyModel;
 class QTableView;
+class QTabWidget;
 class QTimer;
 
 class Dienstemodell;
@@ -23,6 +24,11 @@ class Hauptfenster : public QMainWindow {
 
 public:
     explicit Hauptfenster(QWidget *eltern = nullptr);
+
+    // Schreibt die Kennzahlen auf die Standardausgabe. Fuer --bild, wo
+    // niemand hinsieht, aber jemand nachrechnen koennen soll.
+    void melde() const;
+    void zeigeReiter(int nummer);
 
 private Q_SLOTS:
     void aktualisiere();
@@ -47,6 +53,7 @@ private:
     QLabel *m_standCpu = nullptr;
     QLabel *m_standSpeicher = nullptr;
 
+    QTabWidget *m_reiter = nullptr;
     QTimer *m_takt = nullptr;
     int m_gemerktePid = -1;
 };

@@ -9,6 +9,8 @@
 #include "hauptfenster.h"
 
 #include <QApplication>
+#include <QCommandLineParser>
+#include <QTimer>
 
 int main(int argc, char *argv[])
 {
@@ -18,8 +20,40 @@ int main(int argc, char *argv[])
     QApplication::setApplicationVersion(QStringLiteral("0.1.0"));
     QApplication::setDesktopFileName(QStringLiteral("nt-taskmanager"));
 
+    // --bild <datei>: Fenster aufbauen, einmal messen, fotografieren,
+    // beenden. Kein Testgeruest im eigentlichen Sinn, sondern der Weg,
+    // wie die Bilder fuer das README entstehen - und nebenbei die
+    // einzige Moeglichkeit, den Aufbau ohne Sitzung zu pruefen.
+    QCommandLineParser zerleger;
+    QCommandLineOption bild(QStringLiteral("bild"),
+                            QStringLiteral("Fenster in eine Datei schreiben "
+                                           "und beenden"),
+                            QStringLiteral("datei"));
+    QCommandLineOption reiter(QStringLiteral("reiter"),
+                              QStringLiteral("Welcher Reiter im Bild zu "
+                                             "sehen ist (0 = Processes)"),
+                              QStringLiteral("nummer"),
+                              QStringLiteral("0"));
+    zerleger.addOption(bild);
+    zerleger.addOption(reiter);
+    zerleger.addHelpOption();
+    zerleger.addVersionOption();
+    zerleger.process(programm);
+
     Hauptfenster fenster;
+    fenster.zeigeReiter(zerleger.value(reiter).toInt());
     fenster.show();
+
+    if (zerleger.isSet(bild)) {
+        const QString ziel = zerleger.value(bild);
+        // 1,5 Sekunden: der erste Messdurchgang legt nur die
+        // Vergleichswerte an, erst der zweite hat eine CPU-Last.
+        QTimer::singleShot(1500, &fenster, [&fenster, ziel] {
+            fenster.grab().save(ziel);
+            fenster.melde();
+            QApplication::quit();
+        });
+    }
 
     return QApplication::exec();
 }

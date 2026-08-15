@@ -14,6 +14,7 @@
 #include <QSortFilterProxyModel>
 #include <QStatusBar>
 #include <QTabWidget>
+#include <QTextStream>
 #include <QTableView>
 #include <QTimer>
 #include <QVBoxLayout>
@@ -37,10 +38,10 @@ Hauptfenster::Hauptfenster(QWidget *eltern)
     leiste->addMenu(QStringLiteral("&View"));
     leiste->addMenu(QStringLiteral("&Help"));
 
-    auto *reiter = new QTabWidget(this);
-    reiter->addTab(baueProzessseite(), QStringLiteral("Processes"));
-    reiter->addTab(baueDiensteseite(), QStringLiteral("Services"));
-    setCentralWidget(reiter);
+    m_reiter = new QTabWidget(this);
+    m_reiter->addTab(baueProzessseite(), QStringLiteral("Processes"));
+    m_reiter->addTab(baueDiensteseite(), QStringLiteral("Services"));
+    setCentralWidget(m_reiter);
 
     m_standProzesse = new QLabel(this);
     m_standCpu = new QLabel(this);
@@ -65,6 +66,26 @@ Hauptfenster::Hauptfenster(QWidget *eltern)
     resize(424, 468);
 }
 
+void Hauptfenster::zeigeReiter(int nummer)
+{
+    if (m_reiter && nummer >= 0 && nummer < m_reiter->count()) {
+        m_reiter->setCurrentIndex(nummer);
+    }
+}
+
+void Hauptfenster::melde() const
+{
+    QTextStream aus(stdout);
+    aus << "Prozesse: " << m_prozesse->anzahl()
+        << "  CPU: " << qRound(m_prozesse->gesamtlast()) << " %"
+        << "  Speicher: " << qRound(m_prozesse->speicherlast()) << " %"
+        << "  Dienste: " << m_dienste->anzahl();
+    if (!m_dienste->fehler().isEmpty()) {
+        aus << "  FEHLER: " << m_dienste->fehler();
+    }
+    aus << Qt::endl;
+}
+
 QWidget *Hauptfenster::baueProzessseite()
 {
     auto *seite = new QWidget(this);
@@ -76,6 +97,10 @@ QWidget *Hauptfenster::baueProzessseite()
     m_prozessfilter->setSourceModel(m_prozesse);
     m_prozessfilter->setSortRole(Qt::UserRole);
     m_prozessfilter->setDynamicSortFilter(true);
+    // Ohne das stuenden alle grossgeschriebenen Namen vor allen
+    // kleingeschriebenen - ModemManager vor accounts-daemon. Nach
+    // ASCII-Werten ist das richtig, fuer den Leser ist es Unsinn.
+    m_prozessfilter->setSortCaseSensitivity(Qt::CaseInsensitive);
 
     m_prozessansicht = new QTableView(seite);
     m_prozessansicht->setModel(m_prozessfilter);
@@ -122,6 +147,7 @@ QWidget *Hauptfenster::baueDiensteseite()
     m_dienstefilter = new QSortFilterProxyModel(this);
     m_dienstefilter->setSourceModel(m_dienste);
     m_dienstefilter->setSortRole(Qt::UserRole);
+    m_dienstefilter->setSortCaseSensitivity(Qt::CaseInsensitive);
 
     m_diensteansicht = new QTableView(seite);
     m_diensteansicht->setModel(m_dienstefilter);

@@ -4,6 +4,8 @@ Ein Systemmonitor in der Form des Windows-NT-4.0-Taskmanagers: Prozesse
 mit CPU-Last und Speicherbelegung, Beenden per Knopf, und die Dienste des
 Systems.
 
+![Processes](doc/processes.png)
+
 Gedacht als Beiwerk zum Plasma-Design
 [NT Legacy](https://github.com/huppiflupp/NiceOS9-theme) — es läuft aber
 unabhängig davon und sieht dann eben aus wie der Rest deines Desktops.
@@ -48,12 +50,25 @@ cmake --build build
 
 Auf Fedora braucht es dafür `qt6-qtbase-devel`.
 
+Für Bilder wie die oben:
+
+```bash
+./build/nt-taskmanager --bild fenster.png        # Processes
+./build/nt-taskmanager --reiter 1 --bild x.png   # Services
+```
+
+Der Schalter baut das Fenster auf, misst einmal, fotografiert und
+beendet. Nebenbei schreibt er die Kennzahlen auf die Standardausgabe —
+so lässt sich nachrechnen, ob die Zahlen im Fenster stimmen.
+
 ## Was drin ist
 
 | Reiter | Inhalt |
 |---|---|
 | **Processes** | Name, Benutzer, CPU-Last, Speicher, PID. Sortierbar, Prozess beenden. |
 | **Services** | Die systemd-Units vom Typ `.service` mit Beschreibung und Status. |
+
+![Services](doc/services.png)
 
 Zur CPU-Spalte: Die Werte summieren sich über alle Prozesse auf 100 %,
 nicht auf 100 % je Kern. So macht es der Windows-Taskmanager; `top` macht
