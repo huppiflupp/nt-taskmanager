@@ -17,6 +17,7 @@ class QTabWidget;
 class QTimer;
 
 class Dienstemodell;
+class Leistungsseite;
 class Prozessmodell;
 
 class Hauptfenster : public QMainWindow {
@@ -33,8 +34,12 @@ public:
 private Q_SLOTS:
     void aktualisiere();
     void beendeAuswahl();
+    void neueAufgabe();
+    void setzeTakt(int millisekunden);
+    void ueberDasProgramm();
 
 private:
+    void baueMenue();
     QWidget *baueProzessseite();
     QWidget *baueDiensteseite();
     void merkeAuswahl();
@@ -53,6 +58,7 @@ private:
     QLabel *m_standCpu = nullptr;
     QLabel *m_standSpeicher = nullptr;
 
+    Leistungsseite *m_leistung = nullptr;
     QTabWidget *m_reiter = nullptr;
     QTimer *m_takt = nullptr;
     int m_gemerktePid = -1;

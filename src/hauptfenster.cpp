@@ -1,12 +1,17 @@
 #include "hauptfenster.h"
 
 #include "dienstemodell.h"
+#include "leistungsseite.h"
 #include "prozessmodell.h"
 
+#include <QActionGroup>
+#include <QApplication>
 #include <QCheckBox>
+#include <QInputDialog>
 #include <QHBoxLayout>
 #include <QHeaderView>
 #include <QLabel>
+#include <QLineEdit>
 #include <QMenuBar>
 #include <QMessageBox>
 #include <QProcess>
@@ -32,15 +37,13 @@ Hauptfenster::Hauptfenster(QWidget *eltern)
 {
     setWindowTitle(QStringLiteral("Task Manager"));
 
-    auto *leiste = menuBar();
-    leiste->addMenu(QStringLiteral("&File"));
-    leiste->addMenu(QStringLiteral("&Options"));
-    leiste->addMenu(QStringLiteral("&View"));
-    leiste->addMenu(QStringLiteral("&Help"));
+    baueMenue();
 
     m_reiter = new QTabWidget(this);
     m_reiter->addTab(baueProzessseite(), QStringLiteral("Processes"));
     m_reiter->addTab(baueDiensteseite(), QStringLiteral("Services"));
+    m_leistung = new Leistungsseite(this);
+    m_reiter->addTab(m_leistung, QStringLiteral("Performance"));
     setCentralWidget(m_reiter);
 
     m_standProzesse = new QLabel(this);
@@ -84,6 +87,104 @@ void Hauptfenster::melde() const
         aus << "  FEHLER: " << m_dienste->fehler();
     }
     aus << Qt::endl;
+}
+
+void Hauptfenster::baueMenue()
+{
+    // Die Eintraege des Originals, soweit sie unter Linux einen Sinn
+    // ergeben. Weggelassen sind "Minimize On Use" und "Hide When
+    // Minimized" - beides Verhalten, das unter Plasma der
+    // Fenstermanager regelt und kein Programm sich selbst nehmen
+    // sollte. Und "Select Columns", solange es nur fuenf gibt.
+    auto *datei = menuBar()->addMenu(QStringLiteral("&File"));
+    datei->addAction(QStringLiteral("&New Task (Run...)"), this,
+                     &Hauptfenster::neueAufgabe);
+    datei->addSeparator();
+    datei->addAction(QStringLiteral("E&xit Task Manager"), this,
+                     &QWidget::close);
+
+    auto *einstellungen = menuBar()->addMenu(QStringLiteral("&Options"));
+    auto *obenauf = einstellungen->addAction(QStringLiteral("&Always On Top"));
+    obenauf->setCheckable(true);
+    connect(obenauf, &QAction::toggled, this, [this](bool an) {
+        // Fensterfahnen zu aendern heisst unter Wayland, das Fenster neu
+        // aufzubauen - deshalb das show() danach. Ohne es verschwindet
+        // das Fenster beim Umschalten.
+        setWindowFlag(Qt::WindowStaysOnTopHint, an);
+        show();
+    });
+
+    auto *ansicht = menuBar()->addMenu(QStringLiteral("&View"));
+    ansicht->addAction(QStringLiteral("&Refresh Now"), QKeySequence(Qt::Key_F5),
+                       this, &Hauptfenster::aktualisiere);
+    auto *tempo = ansicht->addMenu(QStringLiteral("&Update Speed"));
+    auto *gruppe = new QActionGroup(this);
+    struct Stufe {
+        const char *name;
+        int ms;
+    };
+    // "Paused" ist 0 - der Taktgeber wird dann angehalten, nicht auf
+    // einen sehr grossen Wert gestellt. Sonst liefe irgendwann doch eine
+    // Messung durch, und der Verlauf haette eine Luecke, die niemand
+    // erklaeren kann.
+    for (const Stufe &s : {Stufe{"&High", 500}, Stufe{"&Normal", 1000},
+                           Stufe{"&Low", 4000}, Stufe{"&Paused", 0}}) {
+        auto *eintrag = tempo->addAction(QString::fromLatin1(s.name));
+        eintrag->setCheckable(true);
+        eintrag->setChecked(s.ms == 1000);
+        gruppe->addAction(eintrag);
+        connect(eintrag, &QAction::triggered, this,
+                [this, ms = s.ms] { setzeTakt(ms); });
+    }
+
+    auto *hilfe = menuBar()->addMenu(QStringLiteral("&Help"));
+    hilfe->addAction(QStringLiteral("&About Task Manager"), this,
+                     &Hauptfenster::ueberDasProgramm);
+}
+
+void Hauptfenster::neueAufgabe()
+{
+    bool bestaetigt = false;
+    const QString befehl = QInputDialog::getText(
+        this, QStringLiteral("Create New Task"),
+        QStringLiteral("Type the name of a program, and Task Manager will "
+                       "open it for you."),
+        QLineEdit::Normal, QString(), &bestaetigt);
+    if (!bestaetigt || befehl.trimmed().isEmpty()) {
+        return;
+    }
+    // Ueber die Shell, damit auch "kate datei.txt" funktioniert. Der
+    // Eingabe vertrauen wir dabei: Wer hier tippt, sitzt ohnehin schon
+    // vor der Sitzung und koennte dasselbe im Terminal tun.
+    if (!QProcess::startDetached(QStringLiteral("/bin/sh"),
+                                 {QStringLiteral("-c"), befehl})) {
+        QMessageBox::critical(this, QStringLiteral("Task Manager"),
+                              QStringLiteral("Cannot start \"%1\".").arg(befehl));
+    }
+}
+
+void Hauptfenster::setzeTakt(int millisekunden)
+{
+    if (millisekunden <= 0) {
+        m_takt->stop();
+        return;
+    }
+    m_takt->setInterval(millisekunden);
+    m_takt->start();
+}
+
+void Hauptfenster::ueberDasProgramm()
+{
+    QMessageBox::about(
+        this, QStringLiteral("About Task Manager"),
+        QStringLiteral(
+            "<b>Task Manager %1</b><br><br>"
+            "Processes, services and load in the shape of the Windows NT 4.0 "
+            "Task Manager.<br><br>"
+            "The window draws nothing by itself - its appearance comes from "
+            "the widget style and the colour scheme of the system.<br><br>"
+            "GPL-2.0-or-later")
+            .arg(QApplication::applicationVersion()));
 }
 
 QWidget *Hauptfenster::baueProzessseite()
@@ -220,6 +321,16 @@ void Hauptfenster::aktualisiere()
                             .arg(qRound(m_prozesse->gesamtlast())));
     m_standSpeicher->setText(QStringLiteral("Physical Memory: %1%")
                                  .arg(qRound(m_prozesse->speicherlast())));
+
+    // Dieselben Zahlen weiterreichen, statt sie dort noch einmal zu
+    // messen - sonst stuenden im selben Fenster zwei Werte fuer
+    // dieselbe Groesse, die sich um ein Prozent unterscheiden.
+    if (m_leistung) {
+        m_leistung->setzeWerte(m_prozesse->gesamtlast(),
+                               m_prozesse->speicherlast(),
+                               m_prozesse->speicherBelegt(),
+                               m_prozesse->speicherGesamt());
+    }
 }
 
 void Hauptfenster::beendeAuswahl()

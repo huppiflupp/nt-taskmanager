@@ -202,14 +202,24 @@ QVector<Prozess> Prozessquelle::lies()
         }
     }
 
+    liesSpeicher();
+
     return liste;
 }
 
 double Prozessquelle::speicherlast() const
 {
+    if (m_speicher_gesamt <= 0) {
+        return 0.0;
+    }
+    return 100.0 * m_speicher_belegt / m_speicher_gesamt;
+}
+
+void Prozessquelle::liesSpeicher()
+{
     QFile datei(QStringLiteral("/proc/meminfo"));
     if (!datei.open(QIODevice::ReadOnly)) {
-        return 0.0;
+        return;
     }
     qint64 gesamt = 0;
     qint64 verfuegbar = 0;
@@ -235,7 +245,8 @@ double Prozessquelle::speicherlast() const
         }
     }
     if (gesamt <= 0) {
-        return 0.0;
+        return;
     }
-    return 100.0 * (gesamt - verfuegbar) / gesamt;
+    m_speicher_gesamt = gesamt;
+    m_speicher_belegt = gesamt - verfuegbar;
 }

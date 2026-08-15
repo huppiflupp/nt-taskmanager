@@ -40,6 +40,8 @@ public:
     const Prozess *prozess(int zeile) const;
     double gesamtlast() const { return m_quelle.gesamtlast(); }
     double speicherlast() const { return m_quelle.speicherlast(); }
+    qint64 speicherBelegt() const { return m_quelle.speicherBelegt(); }
+    qint64 speicherGesamt() const { return m_quelle.speicherGesamt(); }
     int anzahl() const { return static_cast<int>(m_zeilen.size()); }
 
 private:

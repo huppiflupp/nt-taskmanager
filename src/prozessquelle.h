@@ -28,12 +28,17 @@ public:
     // ueberall 0,0 - das ist richtig so und keine Luecke.
     QVector<Prozess> lies();
 
-    // Gesamtlast und Speicherbelegung in Prozent, fuer die Statuszeile.
+    // Gesamtlast und Speicherbelegung. Alles davon entsteht in lies();
+    // hier stehen nur noch Abfragen. Der Reiter "Performance" und die
+    // Statuszeile sollen dieselbe Messung sehen und nicht zwei eigene.
     double gesamtlast() const { return m_gesamtlast; }
     double speicherlast() const;
+    qint64 speicherBelegt() const { return m_speicher_belegt; }
+    qint64 speicherGesamt() const { return m_speicher_gesamt; }
 
 private:
     QString benutzername(uint uid);
+    void liesSpeicher();
 
     struct Zaehler {
         qint64 takte = 0;   // utime + stime beim letzten Lesen
@@ -45,6 +50,8 @@ private:
     qint64 m_gesamt_vorher = 0;     // Summe aller Felder aus /proc/stat
     qint64 m_leerlauf_vorher = 0;
     double m_gesamtlast = 0.0;
+    qint64 m_speicher_belegt = 0;   // Kilobyte
+    qint64 m_speicher_gesamt = 0;
     long m_takt_je_sekunde = 100;
     int m_kerne = 1;
 };

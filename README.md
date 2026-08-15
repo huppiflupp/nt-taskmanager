@@ -67,6 +67,14 @@ so lässt sich nachrechnen, ob die Zahlen im Fenster stimmen.
 |---|---|
 | **Processes** | Name, Benutzer, CPU-Last, Speicher, PID. Sortierbar, Prozess beenden. |
 | **Services** | Die systemd-Units vom Typ `.service` mit Beschreibung und Status. |
+| **Performance** | Prozessor, Grafikkarte und Arbeitsspeicher als Balken mit Verlauf. |
+
+![Performance](doc/performance.png)
+
+Im Menü: *New Task (Run…)*, *Always On Top*, *Refresh Now* (F5) und die
+Taktstufen *High / Normal / Low / Paused*. Nicht übernommen sind
+*Minimize On Use* und *Hide When Minimized* — beides regelt unter Plasma
+der Fenstermanager, und kein Programm sollte sich das selbst nehmen.
 
 ![Services](doc/services.png)
 
@@ -79,6 +87,40 @@ Beendet wird mit `SIGTERM`, nicht `SIGKILL` — der Prozess soll aufräumen
 dürfen. Gehört er einem anderen Benutzer, läuft der Aufruf über `pkexec`,
 das den Authentifizierungsdialog des Systems öffnet.
 
+## Die Grafikkarte
+
+Die einzige Zeile im Performance-Reiter, die es 1996 nicht gab.
+
+| Hersteller | Weg |
+|---|---|
+| NVIDIA | NVML (`libnvidia-ml`), zur Laufzeit nachgeladen |
+| AMD | `/sys/class/drm/cardN/device/gpu_busy_percent` |
+| Intel | fehlt — siehe unten |
+
+NVML wird mit `dlopen` geholt und nicht dazugelinkt: Sonst liefe das
+Programm auf keinem Rechner ohne NVIDIA-Treiber, und das sind die
+meisten. Die beiden benötigten Strukturen sind selbst deklariert, weil
+der NVML-Header nur im CUDA-Werkzeugkasten liegt — gegen die Bibliothek
+geprüft, der Wert deckt sich aufs Prozent mit `nvidia-smi`.
+
+Intel fehlt mit Absicht: Die Auslastung liegt dort hinter dem i915-PMU,
+das ohne erhöhte Rechte nicht lesbar ist. Ein Systemmonitor, der nach dem
+Passwort fragt, um einen Balken zu zeichnen, wäre die falsche Antwort.
+
+## Warum grün auf schwarz
+
+Balken und Verlauf sind die eine Stelle, an der das Programm doch selbst
+zeichnet — die liefert kein Widget-Stil. Ihre Farben folgen deshalb
+**nicht** dem Farbschema, sondern bleiben grün auf schwarz.
+
+Das ist kein Versehen: Windows hat es genauso gehalten. Die Fensterfarben
+folgten dem eingestellten Schema, die Anzeigen im Taskmanager blieben
+grün. Wer sie einfärbt, verliert genau das Bild, das jeder kennt.
+
+Der Rahmen um beide kommt dagegen sehr wohl vom Stil
+(`QStyle::PE_Frame`), damit die Vertiefung dieselbe ist wie an jeder
+Tabelle im Fenster.
+
 ## Was nicht drin ist
 
 **Applications.** Der Reiter mit der Fensterliste fehlt, und das hat einen
@@ -86,9 +128,6 @@ technischen Grund: Unter X11 wäre er drei Zeilen (`_NET_CLIENT_LIST`),
 unter Wayland gibt es diesen Weg nicht mehr. Die Fensterliste käme dort
 nur über ein KWin-Skript, das man per D-Bus in den Fenstermanager lädt und
 das sich zurückmeldet — für den Nutzen zu viel Maschinerie.
-
-**Performance.** Die Verlaufsgraphen sind das Einzige, was der Widget-Stil
-nicht geschenkt liefert; sie müssten gezeichnet werden. Vielleicht später.
 
 ## Lizenz
 

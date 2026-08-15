@@ -27,9 +27,15 @@ qt_add_executable(nt-taskmanager
     src/prozessmodell.h
     src/dienstemodell.cpp
     src/dienstemodell.h
+    src/anzeigen.cpp
+    src/anzeigen.h
+    src/gpuquelle.cpp
+    src/gpuquelle.h
+    src/leistungsseite.cpp
+    src/leistungsseite.h
 )
 
-target_link_libraries(nt-taskmanager PRIVATE Qt6::Widgets Qt6::DBus)
+target_link_libraries(nt-taskmanager PRIVATE Qt6::Widgets Qt6::DBus ${CMAKE_DL_LIBS})
 
 include(GNUInstallDirs)
 install(TARGETS nt-taskmanager RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
