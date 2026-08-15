@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=Task Manager
+GenericName=System Monitor
+Comment=Processes and services in the shape of Windows NT 4.0
+Exec=nt-taskmanager
+Icon=utilities-system-monitor
+Terminal=false
+Categories=Qt;System;Monitor;
+Keywords=process;task;service;kill;cpu;memory;
+StartupNotify=true

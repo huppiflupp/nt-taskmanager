@@ -1,0 +1,8 @@
+# Bauverzeichnisse
+build/
+build-*/
+
+# Erzeugnisse von Editoren und Werkzeugen
+compile_commands.json
+.cache/
+*.user
