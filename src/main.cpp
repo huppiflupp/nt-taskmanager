@@ -17,7 +17,8 @@ int main(int argc, char *argv[])
     QApplication programm(argc, argv);
     QApplication::setApplicationName(QStringLiteral("nt-taskmanager"));
     QApplication::setApplicationDisplayName(QStringLiteral("Task Manager"));
-    QApplication::setApplicationVersion(QStringLiteral("0.1.0"));
+    QApplication::setApplicationVersion(
+        QStringLiteral(NT_TASKMANAGER_VERSION));
     QApplication::setDesktopFileName(QStringLiteral("nt-taskmanager"));
 
     // --bild <datei>: Fenster aufbauen, einmal messen, fotografieren,

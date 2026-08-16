@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.20)
-project(nt-taskmanager VERSION 0.1.0 LANGUAGES CXX)
+project(nt-taskmanager VERSION 1.0.0 LANGUAGES CXX)
 
 # Genau eine Abhaengigkeit: Qt6.
 #
@@ -40,6 +40,12 @@ qt_add_executable(nt-taskmanager
 )
 
 target_link_libraries(nt-taskmanager PRIVATE Qt6::Widgets Qt6::DBus ${CMAKE_DL_LIBS})
+
+# Die Version kommt aus dem project()-Aufruf oben und nur von dort. Sie
+# stand vorher ein zweites Mal im Quelltext, und solche Paare laufen
+# frueher oder spaeter auseinander.
+target_compile_definitions(nt-taskmanager PRIVATE
+    NT_TASKMANAGER_VERSION="${PROJECT_VERSION}")
 
 include(GNUInstallDirs)
 install(TARGETS nt-taskmanager RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})

@@ -40,7 +40,7 @@ die Fensterliste; beide liegen auf jedem Plasma-System. Gebraucht werden
 sie nicht. systemd spricht D-Bus, und D-Bus steckt in Qt. Die Prozessdaten
 stehen in `/proc`, und die Formate sind in `proc(5)` festgeschrieben.
 
-## Bauen
+## Bauen und installieren
 
 ```bash
 cmake -B build -DCMAKE_BUILD_TYPE=Release
@@ -48,18 +48,33 @@ cmake --build build
 ./build/nt-taskmanager
 ```
 
-Auf Fedora braucht es dafür `qt6-qtbase-devel`.
-
-Für Bilder wie die oben:
+Auf Fedora braucht es dafür `qt6-qtbase-devel`, sonst nichts. Zum
+Installieren:
 
 ```bash
-./build/nt-taskmanager --bild fenster.png        # Processes
-./build/nt-taskmanager --reiter 1 --bild x.png   # Services
+sudo cmake --install build                          # nach /usr/local
+cmake --install build --prefix ~/.local             # oder ins Benutzerverzeichnis
 ```
 
-Der Schalter baut das Fenster auf, misst einmal, fotografiert und
-beendet. Nebenbei schreibt er die Kennzahlen auf die Standardausgabe —
-so lässt sich nachrechnen, ob die Zahlen im Fenster stimmen.
+Beides legt das Programm und die `.desktop`-Datei ab; danach steht *Task
+Manager* im Anwendungsstarter.
+
+### Aufrufoptionen
+
+| Option | Wirkung |
+|---|---|
+| `--obenauf` | Fenster im Vordergrund halten (siehe unten) |
+| `--reiter <n>` | mit welchem Reiter das Fenster öffnet, `0` ist *Processes* |
+| `--bild <datei>` | Fenster aufbauen, einmal messen, fotografieren, beenden |
+
+`--bild` ist der Weg, wie die Bilder in dieser Datei entstehen. Nebenbei
+schreibt es die Kennzahlen auf die Standardausgabe — so lässt sich
+nachrechnen, ob die Zahlen im Fenster stimmen:
+
+```
+$ ./build/nt-taskmanager --bild x.png
+Prozesse: 502  CPU: 41 %  Speicher: 35 %  Dienste: 239
+```
 
 ## Was drin ist
 
@@ -69,6 +84,8 @@ so lässt sich nachrechnen, ob die Zahlen im Fenster stimmen.
 | **Services** | Die systemd-Units vom Typ `.service` mit Beschreibung und Status. |
 | **Performance** | Prozessor, Grafikkarte und Arbeitsspeicher als Balken mit Verlauf. |
 | **Networking** | Ethernet, WLAN und Bluetooth: je ein Verlauf, darunter die Tabelle. |
+
+![Networking](doc/networking.png)
 
 ![Performance](doc/performance.png)
 
@@ -166,6 +183,64 @@ unter Wayland gibt es diesen Weg nicht mehr. Die Fensterliste käme dort
 nur über ein KWin-Skript, das man per D-Bus in den Fenstermanager lädt und
 das sich zurückmeldet — für den Nutzen zu viel Maschinerie.
 
+## Wo was steht
+
+| Datei | Zuständig für |
+|---|---|
+| `src/hauptfenster.*` | Fenster, Reiter, Menü, Statuszeile |
+| `src/prozessquelle.*` | `/proc` lesen: Prozesse, CPU-Last, Speicher |
+| `src/prozessmodell.*` | die Prozesstabelle als Qt-Modell |
+| `src/dienstemodell.*` | systemd-Units über D-Bus |
+| `src/leistungsseite.*` | der Reiter *Performance* |
+| `src/netzquelle.*` | `/proc/net/dev`, sysfs und das Bluetooth-`ioctl` |
+| `src/netzseite.*` | der Reiter *Networking* |
+| `src/anzeigen.*` | Balken und Verlauf — das einzige selbst Gezeichnete |
+| `src/gpuquelle.*` | NVML und der AMD-sysfs-Weg |
+
+Die Quellen messen, die Seiten zeigen an. Wer eine weitere Größe
+aufnehmen will, schreibt eine Quelle und hängt sie an eine Seite — die
+Messung gehört nicht in den Zeichencode.
+
+Alle Zahlen entstehen **einmal je Takt** und werden weitergereicht, nicht
+an jeder Anzeigestelle neu gelesen. Sonst stünden im selben Fenster zwei
+Werte für dieselbe Größe, die sich um ein Prozent unterscheiden.
+
+## Was geprüft ist
+
+Kein automatischer Test, aber jede Zahl ist gegen ein vorhandenes
+Werkzeug gegengerechnet — auf demselben Rechner, im selben Zeitfenster:
+
+| Wert | eigen | Gegenprobe |
+|---|---|---|
+| Prozesse | 512 | `ps ax` → 512 |
+| Dienste | 240 | `systemctl` → 240 |
+| Speicher | 54 % | `free` → 54 % |
+| CPU | 47 % | `top` → 46 % |
+| Prozesszeit | 78 s | `ps -o cputimes` → 78 s |
+| GPU-Last | 33 % | `nvidia-smi` → 33 % |
+| Bluetooth RX/TX | 2 988 490 / 30 409 | `hciconfig` → gleich |
+
+## Fallstricke, die hier schon bezahlt sind
+
+Falls jemand daran weiterbaut — das sind die Stellen, die stillschweigend
+falsch rechnen, statt zu scheitern:
+
+- **`QFile::atEnd()` ist bei `/proc` und `/sys` unbrauchbar.** Die
+  Dateien melden Größe 0, also sagt `atEnd()` schon vor dem ersten Lesen
+  ja, und die Schleife läuft null Mal durch. Immer `readAll()`.
+- **Der Prozessname in `comm` ist auf 15 Zeichen begrenzt.** Aus
+  `plasma-systemmonitor` wird `plasma-systemmo`. Der Name kommt deshalb
+  aus dem `exe`-Symlink.
+- **`QFileInfo::exists()` folgt dem Symlink.** Bei fremden Prozessen ohne
+  Leserecht sagt es ebenfalls nein — Kernprozesse erkennt man an der
+  leeren `cmdline`, nicht am fehlenden `exe`.
+- **Der Name in `/proc/PID/stat` darf Klammern und Leerzeichen
+  enthalten** („(Web Content)"). Deshalb wird hinter der *letzten*
+  schließenden Klammer weitergelesen.
+- **`MemFree` ist nicht der belegte Speicher.** Über `MemFree` gerechnet
+  meldete ein gesundes System 95 % Belegung; richtig ist `MemAvailable`.
+- **`Qt::WindowStaysOnTopHint` wirkt unter Wayland nicht** — siehe oben.
+
 ## Lizenz
 
-GPL-2.0-or-later.
+GPL-2.0-or-later. Das Programm enthält kein fremdes Material.
