@@ -19,24 +19,24 @@ qt_standard_project_setup()
 
 qt_add_executable(nt-taskmanager
     src/main.cpp
-    src/hauptfenster.cpp
-    src/hauptfenster.h
-    src/prozessquelle.cpp
-    src/prozessquelle.h
-    src/prozessmodell.cpp
-    src/prozessmodell.h
-    src/dienstemodell.cpp
-    src/dienstemodell.h
-    src/anzeigen.cpp
-    src/anzeigen.h
-    src/gpuquelle.cpp
-    src/gpuquelle.h
-    src/leistungsseite.cpp
-    src/leistungsseite.h
-    src/netzquelle.cpp
-    src/netzquelle.h
-    src/netzseite.cpp
-    src/netzseite.h
+    src/mainwindow.cpp
+    src/mainwindow.h
+    src/processreader.cpp
+    src/processreader.h
+    src/processmodel.cpp
+    src/processmodel.h
+    src/servicemodel.cpp
+    src/servicemodel.h
+    src/meters.cpp
+    src/meters.h
+    src/gpureader.cpp
+    src/gpureader.h
+    src/performancepage.cpp
+    src/performancepage.h
+    src/networkreader.cpp
+    src/networkreader.h
+    src/networkpage.cpp
+    src/networkpage.h
 )
 
 target_link_libraries(nt-taskmanager PRIVATE Qt6::Widgets Qt6::DBus ${CMAKE_DL_LIBS})

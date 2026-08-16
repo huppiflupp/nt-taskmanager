@@ -1,21 +1,21 @@
-# RPM-Bauvorschrift fuer nt-taskmanager.
+# RPM build recipe for nt-taskmanager.
 #
-# Bauen aus dem Quellbaum heraus:
+# Building from the source tree:
 #
-#     ./packaging/mach-rpm.sh
+#     ./packaging/make-rpm.sh
 #
-# Der Release-Zaehler steht hier ausgeschrieben und nicht als
-# %%autorelease. Letzteres ist in Fedoras eigener Paketverwaltung ueblich,
-# braucht aber rpmautospec - ausserhalb davon scheitert der Bau daran
-# wortlos. Wer das Paket bei Fedora einreicht, tauscht beides (Release
-# und %%changelog) gegen %%autorelease und %%autochangelog.
+# The release counter is written out rather than using %%autorelease.
+# The latter is customary inside Fedora's own packaging but needs
+# rpmautospec; outside of it the build fails on that silently. Whoever
+# submits this package to Fedora swaps both (Release and %%changelog)
+# for %%autorelease and %%autochangelog.
 
 Name:           nt-taskmanager
 Version:        1.0.0
 Release:        1%{?dist}
 Summary:        Processes, services and load in a classic shape
 
-# SPDX-Bezeichner, wie es die Fedora-Richtlinien seit 2022 verlangen.
+# SPDX identifier, as the Fedora guidelines have required since 2022.
 License:        GPL-2.0-or-later
 URL:            https://github.com/huppiflupp/nt-taskmanager
 Source0:        %{url}/archive/v%{version}/%{name}-%{version}.tar.gz
@@ -23,14 +23,14 @@ Source0:        %{url}/archive/v%{version}/%{name}-%{version}.tar.gz
 BuildRequires:  cmake >= 3.20
 BuildRequires:  gcc-c++
 BuildRequires:  qt6-qtbase-devel
-# Fuer die Pruefungen im %%check-Abschnitt.
+# For the checks in the %%check section.
 BuildRequires:  desktop-file-utils
 BuildRequires:  appstream
 
-# Absichtlich KEIN Requires auf einen Treiber oder eine Bibliothek fuer
-# die Grafikkarte: NVML wird zur Laufzeit nachgeladen, und wo sie fehlt,
-# zeigt der Reiter "no adapter" statt zu scheitern. Ein hartes Requires
-# haette das Paket auf Rechner mit NVIDIA-Treiber eingeschraenkt.
+# Deliberately NO Requires on a graphics driver or library: NVML is
+# loaded at runtime, and where it is missing the tab shows "no adapter"
+# instead of failing. A hard Requires would have limited the package to
+# machines with the NVIDIA driver installed.
 
 %description
 A system monitor laid out like the task manager of the mid-nineties: a
@@ -70,4 +70,4 @@ appstreamcli validate --no-net --explain \
 
 %changelog
 * Sun Aug 16 2026 huppiflupp <huppiflupp@users.noreply.github.com> - 1.0.0-1
-- Erste Fassung: Prozesse, Dienste, Auslastung und Netzwerk
+- First release: processes, services, performance and networking

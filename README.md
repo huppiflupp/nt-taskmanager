@@ -1,46 +1,46 @@
 # NT Task Manager
 
-Ein Systemmonitor in der Form des Windows-NT-4.0-Taskmanagers: Prozesse
-mit CPU-Last und Speicherbelegung, Beenden per Knopf, und die Dienste des
-Systems.
+A system monitor in the shape of the Windows NT 4.0 task manager:
+processes with CPU and memory usage, a button to end them, the services
+of the system, load meters and network throughput.
 
 ![Processes](doc/processes.png)
 
-Gedacht als Beiwerk zum Plasma-Design
-[NT Legacy](https://github.com/huppiflupp/NiceOS9-theme) — es läuft aber
-unabhängig davon und sieht dann eben aus wie der Rest deines Desktops.
+Meant as a companion to the Plasma theme
+[NT Legacy](https://github.com/huppiflupp/NiceOS9-theme) — but it runs
+independently and then simply looks like the rest of your desktop.
 
 ---
 
-## Das Programm zeichnet nichts selbst
+## The program draws nothing by itself
 
-Das ist die eine Entscheidung, aus der alles andere folgt.
+This is the one decision everything else follows from.
 
-Es gibt in diesem Quelltext kein Stylesheet, keine gesetzte Palette, keine
-eigenen Farben und keine gemalten Rahmen. Alles, was das Fenster nach
-Windows NT aussehen lässt — die versenkte Tabelle, die 3D-Spaltenköpfe,
-die Reiterleiste, die dreigeteilte Statuszeile — kommt vom **Widget-Stil**
-des Systems. Das Design NT Legacy setzt `widgetStyle=Windows`, und der
-Qt-Stil dieses Namens zeichnet genau diese Formen.
+There is no stylesheet in this source, no palette set, no colours of its
+own and no hand-painted frames. Everything that makes the window look
+like Windows NT — the sunken table, the 3D column headers, the tab bar,
+the three-part status line — comes from the **widget style** of the
+system. The NT Legacy theme sets `widgetStyle=Windows`, and the Qt style
+of that name draws exactly these shapes.
 
-Der Gewinn: Das Fenster wechselt die Farbwelt mit, wenn du im Design von
-Petrol auf Wüste oder auf eine Nachtfassung umschaltest. Ohne eine Zeile
-Code dafür.
+What that buys: the window changes colour world with you when you switch
+the theme from teal to desert or to a night variant. Without a line of
+code for it.
 
-Der Preis, und der ist bewusst bezahlt: Unter Breeze sieht es aus wie
-Breeze. Ein Programm, das sein Aussehen erzwingt, passt genau einmal — und
-danach nie wieder.
+The price, paid knowingly: under Breeze it looks like Breeze. A program
+that forces its appearance fits exactly once — and never again after
+that.
 
-## Abhängigkeiten
+## Dependencies
 
-Genau eine: **Qt 6** (Widgets und DBus).
+Exactly one: **Qt 6** (Widgets and DBus).
 
-Naheliegend wären `libksysguard` für die Prozesse und `libtaskmanager` für
-die Fensterliste; beide liegen auf jedem Plasma-System. Gebraucht werden
-sie nicht. systemd spricht D-Bus, und D-Bus steckt in Qt. Die Prozessdaten
-stehen in `/proc`, und die Formate sind in `proc(5)` festgeschrieben.
+`libksysguard` for the processes and `libtaskmanager` for the window list
+would be the obvious choices, and both sit on every Plasma system. They
+are not needed. systemd speaks D-Bus, and D-Bus is part of Qt. The
+process data lives in `/proc`, and the formats are fixed in `proc(5)`.
 
-## Bauen und installieren
+## Building and installing
 
 ```bash
 cmake -B build -DCMAKE_BUILD_TYPE=Release
@@ -48,217 +48,216 @@ cmake --build build
 ./build/nt-taskmanager
 ```
 
-Auf Fedora braucht es dafür `qt6-qtbase-devel`, sonst nichts. Zum
-Installieren:
+On Fedora this needs `qt6-qtbase-devel`, and nothing else. To install:
 
 ```bash
-sudo cmake --install build                          # nach /usr/local
-cmake --install build --prefix ~/.local             # oder ins Benutzerverzeichnis
+sudo cmake --install build                    # into /usr/local
+cmake --install build --prefix ~/.local       # or into your home
 ```
 
-Beides legt das Programm, die `.desktop`-Datei und die
-AppStream-Metadaten ab; danach steht *Task Manager* im Anwendungsstarter.
+Either way the program, the `.desktop` file and the AppStream metadata
+are placed; *Task Manager* then appears in the application launcher.
 
-### Als RPM
+### As an RPM
 
 ```bash
-./packaging/mach-rpm.sh              # baut aus dem aktuellen Stand
-./packaging/mach-rpm.sh --pruefen    # zusätzlich rpmlint, wenn vorhanden
+./packaging/make-rpm.sh              # builds from the current state
+./packaging/make-rpm.sh --lint       # plus rpmlint, if it is installed
 sudo dnf install ~/rpmbuild/RPMS/x86_64/nt-taskmanager-*.rpm
 ```
 
-Das Skript schnürt das Quellarchiv mit `git archive` — es landet also
-nur, was auch im Repository liegt, und kein vergessenes
-`build/`-Verzeichnis. Die Spec liegt unter `packaging/`.
+The script wraps the source archive with `git archive`, so only what is
+actually in the repository ends up in it — no forgotten `build/`
+directory. The spec file lives in `packaging/`.
 
-Das Paket hängt an nichts als Qt6. Insbesondere gibt es **kein**
-`Requires` auf NVML oder einen Grafiktreiber: Die Bibliothek wird zur
-Laufzeit nachgeladen, und wo sie fehlt, zeigt der Reiter *no adapter*
-statt zu scheitern. Ein hartes `Requires` hätte das Paket auf Rechner
-mit NVIDIA-Treiber eingeschränkt.
+Every tagged version also carries a built RPM on its
+[release page](https://github.com/huppiflupp/nt-taskmanager/releases).
 
-### Aufrufoptionen
+The package depends on nothing but Qt6. In particular there is **no**
+`Requires` on NVML or a graphics driver: the library is loaded at
+runtime, and where it is missing the tab shows *no adapter* instead of
+failing. A hard `Requires` would have limited the package to machines
+with the NVIDIA driver installed.
 
-| Option | Wirkung |
+### Command line options
+
+| Option | Effect |
 |---|---|
-| `--obenauf` | Fenster im Vordergrund halten (siehe unten) |
-| `--reiter <n>` | mit welchem Reiter das Fenster öffnet, `0` ist *Processes* |
-| `--bild <datei>` | Fenster aufbauen, einmal messen, fotografieren, beenden |
+| `--on-top` | keep the window above others (see below) |
+| `--tab <n>` | which tab the window opens with, `0` being *Processes* |
+| `--image <file>` | build the window, measure once, take a picture, quit |
 
-`--bild` ist der Weg, wie die Bilder in dieser Datei entstehen. Nebenbei
-schreibt es die Kennzahlen auf die Standardausgabe — so lässt sich
-nachrechnen, ob die Zahlen im Fenster stimmen:
+`--image` is how the pictures in this file are made. On the way out it
+writes the key figures to standard output, so the numbers in the window
+can be checked against something:
 
 ```
-$ ./build/nt-taskmanager --bild x.png
-Prozesse: 502  CPU: 41 %  Speicher: 35 %  Dienste: 239
+$ ./build/nt-taskmanager --image x.png
+Processes: 502  CPU: 41 %  Memory: 35 %  Services: 239
 ```
 
-## Was drin ist
+## What is in it
 
-| Reiter | Inhalt |
+| Tab | Contents |
 |---|---|
-| **Processes** | Name, Benutzer, CPU-Last, Speicher, PID. Sortierbar, Prozess beenden. |
-| **Services** | Die systemd-Units vom Typ `.service` mit Beschreibung und Status. |
-| **Performance** | Prozessor, Grafikkarte und Arbeitsspeicher als Balken mit Verlauf. |
-| **Networking** | Ethernet, WLAN und Bluetooth: je ein Verlauf, darunter die Tabelle. |
-
-![Networking](doc/networking.png)
+| **Processes** | name, user, CPU load, memory, PID. Sortable, ends processes. |
+| **Services** | the systemd units of type `.service` with description and status. |
+| **Performance** | processor, graphics card and memory as a bar with a graph. |
+| **Networking** | Ethernet, Wi-Fi and Bluetooth: one graph each, table below. |
 
 ![Performance](doc/performance.png)
 
-Im Menü: *New Task (Run…)*, *Always On Top*, *Refresh Now* (F5) und die
-Taktstufen *High / Normal / Low / Paused*. Nicht übernommen sind
-*Minimize On Use* und *Hide When Minimized* — beides regelt unter Plasma
-der Fenstermanager, und kein Programm sollte sich das selbst nehmen.
-
 ![Services](doc/services.png)
 
-Zur CPU-Spalte: Die Werte summieren sich über alle Prozesse auf 100 %,
-nicht auf 100 % je Kern. So macht es der Windows-Taskmanager; `top` macht
-es andersherum, und wer beide nebeneinander laufen lässt, sollte wissen
-warum die Zahlen auseinandergehen.
+![Networking](doc/networking.png)
 
-Beendet wird mit `SIGTERM`, nicht `SIGKILL` — der Prozess soll aufräumen
-dürfen. Gehört er einem anderen Benutzer, läuft der Aufruf über `pkexec`,
-das den Authentifizierungsdialog des Systems öffnet.
+In the menu: *New Task (Run…)*, *Always On Top*, *Refresh Now* (F5) and
+the speed steps *High / Normal / Low / Paused*. Not carried over are
+*Minimize On Use* and *Hide When Minimized* — both are governed by the
+window manager under Plasma, and no program should take that upon itself.
 
-## Die Grafikkarte
+About the CPU column: the values add up to 100 % across all processes,
+not to 100 % per core. That is how the Windows task manager counted;
+`top` does it the other way round, and anyone running both side by side
+should know why the numbers differ.
 
-Die einzige Zeile im Performance-Reiter, die es 1996 nicht gab.
+Processes are ended with `SIGTERM`, not `SIGKILL` — the process should be
+allowed to clean up. If it belongs to another user, the call goes through
+`pkexec`, which opens the authentication dialog of the system.
 
-| Hersteller | Weg |
+## The graphics card
+
+The one row in the Performance tab that did not exist in 1996.
+
+| Vendor | Source |
 |---|---|
-| NVIDIA | NVML (`libnvidia-ml`), zur Laufzeit nachgeladen |
+| NVIDIA | NVML (`libnvidia-ml`), loaded at runtime |
 | AMD | `/sys/class/drm/cardN/device/gpu_busy_percent` |
-| Intel | fehlt — siehe unten |
+| Intel | missing — see below |
 
-NVML wird mit `dlopen` geholt und nicht dazugelinkt: Sonst liefe das
-Programm auf keinem Rechner ohne NVIDIA-Treiber, und das sind die
-meisten. Die beiden benötigten Strukturen sind selbst deklariert, weil
-der NVML-Header nur im CUDA-Werkzeugkasten liegt — gegen die Bibliothek
-geprüft, der Wert deckt sich aufs Prozent mit `nvidia-smi`.
+NVML is fetched with `dlopen` rather than linked against: otherwise the
+program would refuse to start on any machine without the NVIDIA driver,
+and that is most of them. The two structs it needs are declared by hand,
+because the NVML header only ships with the CUDA toolkit — verified
+against the library, the value matches `nvidia-smi` to the per cent.
 
-Intel fehlt mit Absicht: Die Auslastung liegt dort hinter dem i915-PMU,
-das ohne erhöhte Rechte nicht lesbar ist. Ein Systemmonitor, der nach dem
-Passwort fragt, um einen Balken zu zeichnen, wäre die falsche Antwort.
+Intel is missing on purpose: its utilisation sits behind the i915 PMU,
+which is not readable without elevated privileges. A system monitor that
+asks for a password in order to draw a bar would be the wrong answer.
 
-## Warum grün auf schwarz
+## The network
 
-Balken und Verlauf sind die eine Stelle, an der das Programm doch selbst
-zeichnet — die liefert kein Widget-Stil. Ihre Farben folgen deshalb
-**nicht** dem Farbschema, sondern bleiben grün auf schwarz.
+Three kinds of adapter, three sources:
 
-Das ist kein Versehen: Windows hat es genauso gehalten. Die Fensterfarben
-folgten dem eingestellten Schema, die Anzeigen im Taskmanager blieben
-grün. Wer sie einfärbt, verliert genau das Bild, das jeder kennt.
-
-Der Rahmen um beide kommt dagegen sehr wohl vom Stil
-(`QStyle::PE_Frame`), damit die Vertiefung dieselbe ist wie an jeder
-Tabelle im Fenster.
-
-## Das Netzwerk
-
-Drei Arten von Adapter, drei Quellen:
-
-| | Zähler | Zustand, Geschwindigkeit |
+| | Counters | State, speed |
 |---|---|---|
-| Ethernet, WLAN | `/proc/net/dev` | `/sys/class/net/…` |
-| Bluetooth | `ioctl HCIGETDEVINFO` | dasselbe `ioctl` |
+| Ethernet, Wi-Fi | `/proc/net/dev` | `/sys/class/net/…` |
+| Bluetooth | `ioctl HCIGETDEVINFO` | the same `ioctl` |
 
-Bluetooth taucht in `/proc/net/dev` nicht auf — dort stünde allenfalls
-`bnep0`, und auch das nur, solange gerade eine PAN-Verbindung besteht.
-Die Zähler des Adapters holt deshalb dasselbe `ioctl`, das auch
-`hciconfig` benutzt; es braucht keine erhöhten Rechte. Die Struktur ist
-selbst deklariert (der Header gehört zu `bluez-libs-devel`) und gegen
-`hciconfig` geprüft: RX 2 988 490 und TX 30 409, auf das Byte gleich.
+Bluetooth does not appear in `/proc/net/dev` — at most `bnep0` would show
+there, and only while a PAN connection exists. The adapter counters
+therefore come from the same `ioctl` that `hciconfig` uses; it needs no
+elevated privileges. The struct is declared by hand (the header belongs
+to `bluez-libs-devel`) and checked against `hciconfig`: RX 2,988,490 and
+TX 30,409, equal to the byte.
 
-Die Auslastung in Prozent gibt es nur, wo eine Linkgeschwindigkeit
-gemeldet wird — bei Ethernet also, bei WLAN und Bluetooth nicht. Dort
-skaliert der Verlauf auf die höchste bisher gesehene Rate und schreibt
-das in den Titel; ohne diesen Hinweis sähe eine Spitze bei 100 % nach
-einer ausgelasteten Leitung aus, und sie heißt nur „so viel wie noch
-nie".
+Utilisation in per cent exists only where a link speed is reported — for
+Ethernet, that is, but not for Wi-Fi or Bluetooth. There the graph scales
+to the highest rate seen so far and says so in its title; without that
+note a spike at 100 % would look like a saturated link, when it only
+means "more than ever before".
 
-## Always On Top unter Wayland
+## Why green on black
 
-`Qt::WindowStaysOnTopHint` bleibt unter Wayland wirkungslos: Das
-Protokoll kennt kein „immer oben", ein Fenster kann seine Lage im Stapel
-dort grundsätzlich nicht selbst bestimmen.
+Bars and graphs are the one place where the program does draw for itself
+— no widget style provides them. Their colours therefore do **not**
+follow the colour scheme; they stay green on black.
 
-Der Fenstermanager kann es sehr wohl. KWin nimmt dafür Anweisungen über
-D-Bus entgegen, also lädt das Programm ein winziges Skript, das sein
-eigenes Fenster an der Prozesskennung erkennt und `keepAbove` setzt.
-Unter X11 genügt weiterhin die Fensterfahne.
+That is not an oversight: Windows did the same. Window colours followed
+the scheme, the meters in the task manager stayed green. Tinting them
+loses exactly the picture everyone recognises.
 
-Als Startoption gibt es dasselbe: `--obenauf`.
+The frame around them does come from the style (`QStyle::PE_Frame`), so
+the recess matches every table in the window.
 
-## Was nicht drin ist
+## Always On Top under Wayland
 
-**Applications.** Der Reiter mit der Fensterliste fehlt, und das hat einen
-technischen Grund: Unter X11 wäre er drei Zeilen (`_NET_CLIENT_LIST`),
-unter Wayland gibt es diesen Weg nicht mehr. Die Fensterliste käme dort
-nur über ein KWin-Skript, das man per D-Bus in den Fenstermanager lädt und
-das sich zurückmeldet — für den Nutzen zu viel Maschinerie.
+`Qt::WindowStaysOnTopHint` has no effect under Wayland: the protocol has
+no notion of "always on top", a window fundamentally cannot decide its
+own place in the stack there.
 
-## Wo was steht
+The window manager can. KWin accepts instructions over D-Bus, so the
+program loads a tiny script that finds its own window by process id and
+sets `keepAbove`. Under X11 the window flag still suffices.
 
-| Datei | Zuständig für |
+The same thing is available as a start option: `--on-top`.
+
+## What is not in it
+
+**Applications.** The tab with the window list is missing, and there is a
+technical reason: under X11 it would be three lines (`_NET_CLIENT_LIST`),
+under Wayland that route is gone. The window list would only be reachable
+through a KWin script loaded into the window manager over D-Bus and
+reporting back — too much machinery for the benefit.
+
+## Where things are
+
+| File | Responsible for |
 |---|---|
-| `src/hauptfenster.*` | Fenster, Reiter, Menü, Statuszeile |
-| `src/prozessquelle.*` | `/proc` lesen: Prozesse, CPU-Last, Speicher |
-| `src/prozessmodell.*` | die Prozesstabelle als Qt-Modell |
-| `src/dienstemodell.*` | systemd-Units über D-Bus |
-| `src/leistungsseite.*` | der Reiter *Performance* |
-| `src/netzquelle.*` | `/proc/net/dev`, sysfs und das Bluetooth-`ioctl` |
-| `src/netzseite.*` | der Reiter *Networking* |
-| `src/anzeigen.*` | Balken und Verlauf — das einzige selbst Gezeichnete |
-| `src/gpuquelle.*` | NVML und der AMD-sysfs-Weg |
+| `src/mainwindow.*` | window, tabs, menu, status bar |
+| `src/processreader.*` | reading `/proc`: processes, CPU load, memory |
+| `src/processmodel.*` | the process table as a Qt model |
+| `src/servicemodel.*` | systemd units over D-Bus |
+| `src/performancepage.*` | the *Performance* tab |
+| `src/networkreader.*` | `/proc/net/dev`, sysfs and the Bluetooth `ioctl` |
+| `src/networkpage.*` | the *Networking* tab |
+| `src/meters.*` | bar and graph — the only thing drawn by hand |
+| `src/gpureader.*` | NVML and the AMD sysfs route |
 
-Die Quellen messen, die Seiten zeigen an. Wer eine weitere Größe
-aufnehmen will, schreibt eine Quelle und hängt sie an eine Seite — die
-Messung gehört nicht in den Zeichencode.
+The readers measure, the pages display. Whoever wants to add another
+quantity writes a reader and hangs it on a page — measuring does not
+belong in the drawing code.
 
-Alle Zahlen entstehen **einmal je Takt** und werden weitergereicht, nicht
-an jeder Anzeigestelle neu gelesen. Sonst stünden im selben Fenster zwei
-Werte für dieselbe Größe, die sich um ein Prozent unterscheiden.
+Every number is produced **once per tick** and passed on, not read again
+at each place that shows it. Otherwise the same window would carry two
+values for the same quantity, differing by a per cent.
 
-## Was geprüft ist
+## What has been checked
 
-Kein automatischer Test, aber jede Zahl ist gegen ein vorhandenes
-Werkzeug gegengerechnet — auf demselben Rechner, im selben Zeitfenster:
+No automated tests, but every number is checked against an existing tool
+— on the same machine, in the same time window:
 
-| Wert | eigen | Gegenprobe |
+| Value | ours | cross-check |
 |---|---|---|
-| Prozesse | 512 | `ps ax` → 512 |
-| Dienste | 240 | `systemctl` → 240 |
-| Speicher | 54 % | `free` → 54 % |
+| Processes | 512 | `ps ax` → 512 |
+| Services | 240 | `systemctl` → 240 |
+| Memory | 54 % | `free` → 54 % |
 | CPU | 47 % | `top` → 46 % |
-| Prozesszeit | 78 s | `ps -o cputimes` → 78 s |
-| GPU-Last | 33 % | `nvidia-smi` → 33 % |
-| Bluetooth RX/TX | 2 988 490 / 30 409 | `hciconfig` → gleich |
+| Process time | 78 s | `ps -o cputimes` → 78 s |
+| GPU load | 33 % | `nvidia-smi` → 33 % |
+| Bluetooth RX/TX | 2,988,490 / 30,409 | `hciconfig` → equal |
 
-## Fallstricke, die hier schon bezahlt sind
+## Traps already paid for
 
-Falls jemand daran weiterbaut — das sind die Stellen, die stillschweigend
-falsch rechnen, statt zu scheitern:
+In case anyone builds on this — these are the places that quietly compute
+the wrong thing instead of failing:
 
-- **`QFile::atEnd()` ist bei `/proc` und `/sys` unbrauchbar.** Die
-  Dateien melden Größe 0, also sagt `atEnd()` schon vor dem ersten Lesen
-  ja, und die Schleife läuft null Mal durch. Immer `readAll()`.
-- **Der Prozessname in `comm` ist auf 15 Zeichen begrenzt.** Aus
-  `plasma-systemmonitor` wird `plasma-systemmo`. Der Name kommt deshalb
-  aus dem `exe`-Symlink.
-- **`QFileInfo::exists()` folgt dem Symlink.** Bei fremden Prozessen ohne
-  Leserecht sagt es ebenfalls nein — Kernprozesse erkennt man an der
-  leeren `cmdline`, nicht am fehlenden `exe`.
-- **Der Name in `/proc/PID/stat` darf Klammern und Leerzeichen
-  enthalten** („(Web Content)"). Deshalb wird hinter der *letzten*
-  schließenden Klammer weitergelesen.
-- **`MemFree` ist nicht der belegte Speicher.** Über `MemFree` gerechnet
-  meldete ein gesundes System 95 % Belegung; richtig ist `MemAvailable`.
-- **`Qt::WindowStaysOnTopHint` wirkt unter Wayland nicht** — siehe oben.
+- **`QFile::atEnd()` is useless on `/proc` and `/sys`.** Those files
+  report a size of 0, so `atEnd()` says yes before the first read and the
+  loop runs zero times. Always `readAll()`.
+- **The process name in `comm` is capped at 15 characters.**
+  `plasma-systemmonitor` becomes `plasma-systemmo`. The name therefore
+  comes from the `exe` symlink.
+- **`QFileInfo::exists()` follows the symlink.** For foreign processes
+  without read permission it says no as well — kernel threads are
+  recognised by an empty `cmdline`, not by a missing `exe`.
+- **The name in `/proc/PID/stat` may contain parentheses and spaces**
+  ("(Web Content)"). Parsing therefore continues after the *last* closing
+  parenthesis.
+- **`MemFree` is not the memory in use.** Computed from `MemFree` a
+  healthy system reported 95 % usage; the right field is `MemAvailable`.
+- **`Qt::WindowStaysOnTopHint` has no effect under Wayland** — see above.
 
-## Lizenz
+## Licence
 
-GPL-2.0-or-later. Das Programm enthält kein fremdes Material.
+GPL-2.0-or-later. The program contains no third-party material.
