@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  AppStream-Metadaten. Ohne diese Datei erscheint das Programm in keiner
+  Software-Zentrale - weder in Discover noch in GNOME Software. Fuer eine
+  Anwendung mit Fenster ist sie in Fedora faktisch Pflicht.
+
+  Die Kennung folgt der umgekehrten Domain-Schreibweise und muss zum
+  Dateinamen passen. Sie ist NICHT der Programmname; das Programm heisst
+  weiterhin nt-taskmanager.
+-->
+<component type="desktop-application">
+  <id>io.github.huppiflupp.nt-taskmanager</id>
+  <launchable type="desktop-id">nt-taskmanager.desktop</launchable>
+
+  <name>NT Task Manager</name>
+  <summary>Processes, services and load in a classic shape</summary>
+
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>GPL-2.0-or-later</project_license>
+
+  <description>
+    <p>
+      A system monitor laid out like the task manager of the mid-nineties:
+      a process list with CPU and memory usage, the services of the system,
+      and load meters with a running graph beside them.
+    </p>
+    <p>
+      The window draws nothing by itself. Its appearance comes from the
+      widget style and the colour scheme of the system, so it follows
+      whatever theme is set instead of imposing one. Under a period theme
+      it looks the part; under Breeze it looks like Breeze.
+    </p>
+    <p>It needs nothing but Qt. What it shows and where it comes from:</p>
+    <ul>
+      <li>Processes, CPU time and memory from /proc</li>
+      <li>Services from systemd over D-Bus</li>
+      <li>Graphics card load from NVML on NVIDIA, from sysfs on AMD</li>
+      <li>Ethernet, Wi-Fi and Bluetooth throughput</li>
+    </ul>
+  </description>
+
+  <categories>
+    <category>System</category>
+    <category>Monitor</category>
+  </categories>
+
+  <keywords>
+    <keyword>process</keyword>
+    <keyword>task</keyword>
+    <keyword>service</keyword>
+    <keyword>cpu</keyword>
+    <keyword>memory</keyword>
+    <keyword>network</keyword>
+  </keywords>
+
+  <url type="homepage">https://github.com/huppiflupp/nt-taskmanager</url>
+  <url type="bugtracker">https://github.com/huppiflupp/nt-taskmanager/issues</url>
+
+  <developer id="io.github.huppiflupp">
+    <name>huppiflupp</name>
+  </developer>
+
+  <content_rating type="oars-1.1"/>
+
+  <releases>
+    <release version="1.0.0" date="2026-08-16">
+      <description>
+        <p>First release. Processes, services, performance and networking.</p>
+      </description>
+    </release>
+  </releases>
+</component>

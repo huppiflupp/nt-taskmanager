@@ -51,3 +51,7 @@ include(GNUInstallDirs)
 install(TARGETS nt-taskmanager RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 install(FILES data/nt-taskmanager.desktop
         DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/applications)
+# Ohne die AppStream-Datei erscheint das Programm in keiner
+# Software-Zentrale - weder in Discover noch in GNOME Software.
+install(FILES data/io.github.huppiflupp.nt-taskmanager.metainfo.xml
+        DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/metainfo)
