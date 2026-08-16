@@ -56,8 +56,26 @@ sudo cmake --install build                          # nach /usr/local
 cmake --install build --prefix ~/.local             # oder ins Benutzerverzeichnis
 ```
 
-Beides legt das Programm und die `.desktop`-Datei ab; danach steht *Task
-Manager* im Anwendungsstarter.
+Beides legt das Programm, die `.desktop`-Datei und die
+AppStream-Metadaten ab; danach steht *Task Manager* im Anwendungsstarter.
+
+### Als RPM
+
+```bash
+./packaging/mach-rpm.sh              # baut aus dem aktuellen Stand
+./packaging/mach-rpm.sh --pruefen    # zusätzlich rpmlint, wenn vorhanden
+sudo dnf install ~/rpmbuild/RPMS/x86_64/nt-taskmanager-*.rpm
+```
+
+Das Skript schnürt das Quellarchiv mit `git archive` — es landet also
+nur, was auch im Repository liegt, und kein vergessenes
+`build/`-Verzeichnis. Die Spec liegt unter `packaging/`.
+
+Das Paket hängt an nichts als Qt6. Insbesondere gibt es **kein**
+`Requires` auf NVML oder einen Grafiktreiber: Die Bibliothek wird zur
+Laufzeit nachgeladen, und wo sie fehlt, zeigt der Reiter *no adapter*
+statt zu scheitern. Ein hartes `Requires` hätte das Paket auf Rechner
+mit NVIDIA-Treiber eingeschränkt.
 
 ### Aufrufoptionen
 

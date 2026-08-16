@@ -5,10 +5,10 @@
 #     ./packaging/mach-rpm.sh
 #
 # Der Release-Zaehler steht hier ausgeschrieben und nicht als
-# %autorelease. Letzteres ist in Fedoras eigener Paketverwaltung ueblich,
+# %%autorelease. Letzteres ist in Fedoras eigener Paketverwaltung ueblich,
 # braucht aber rpmautospec - ausserhalb davon scheitert der Bau daran
 # wortlos. Wer das Paket bei Fedora einreicht, tauscht beides (Release
-# und %changelog) gegen %autorelease und %autochangelog.
+# und %%changelog) gegen %%autorelease und %%autochangelog.
 
 Name:           nt-taskmanager
 Version:        1.0.0
