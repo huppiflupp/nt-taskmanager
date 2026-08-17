@@ -7,7 +7,7 @@ of the system, load meters and network throughput.
 ![Processes](doc/processes.png)
 
 Meant as a companion to the Plasma theme
-[NT Legacy](https://github.com/huppiflupp/NiceOS9-theme) — but it runs
+[NT Legacy](—https://github.com/huppiflupp/nt-legacy) but it runs
 independently and then simply looks like the rest of your desktop.
 
 ---
